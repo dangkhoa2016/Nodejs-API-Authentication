@@ -1,0 +1,26 @@
+{
+  "name": "nodejs-api-authentication",
+  "version": "1.0.0",
+  "description": "Node.js API Authentication using Hono, JsonWebToken, Sequelize, Bcrypt and SQLite",
+  "license": "MIT",
+  "scripts": {
+    "start": "tsx watch src/server.js",
+    "dev": "yarn start",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
+  "dependencies": {
+    "@colors/colors": "^1.6.0",
+    "@hono/node-server": "^1.13.7",
+    "debug": "^4.4.0",
+    "dotenv": "^16.4.7",
+    "hono": "^4.6.17"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint": "^9.18.0",
+    "globals": "^15.14.0",
+    "tsx": "^4.19.2"
+  }
+}
