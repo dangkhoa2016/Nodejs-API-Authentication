@@ -1,0 +1,6 @@
+yarn run sequelize-cli init
+
+yarn run sequelize-cli model:generate --name User --attributes email:string,encrypted_password:string,username:string,first_name:string,last_name:string,avatar:string,role:string,reset_password_token:string,reset_password_sent_at:date,remember_created_at:date,sign_in_count:integer,current_sign_in_at:date,last_sign_in_at:date,current_sign_in_ip:string,last_sign_in_ip:string,confirmation_token:string,confirmed_at:date,confirmation_sent_at:date,unconfirmed_email:string,failed_attempts:integer,unlock_token:string,locked_at:date
+yarn run sequelize-cli model:generate --name JwtDenylist --attributes jti:string,exp:date --underscored
+
+yarn run sequelize-cli db:migrate

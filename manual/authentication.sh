@@ -132,7 +132,9 @@ curl -X POST localhost:4000/users/login \
   }
 }
 
-# 6. Get profile with valid token but the user does not exist
+# ----------------------------------------------------------------
+
+# 1. Get profile with valid token but the user does not exist
 curl localhost:4000/user/me \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzQxMzAzNjk3LCJqdGkiOiIxLjE3Mzc3MDM2OTcifQ.QEhwn_pTU16_fA-4pzWVJQ0hsaoJL8Edhb8SWBISLkY" \
   | jq
@@ -140,7 +142,7 @@ curl localhost:4000/user/me \
   "error": "User not found"
 }
 
-# 7. Get profile with valid token
+# 2. Get profile with valid token
 curl localhost:4000/users/profile \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzIxNTEwLCJqdGkiOiIxLjE3Mzc3MTc5MTAifQ.appzouoVp3F42boGB2Kvn8zy4Dp4F1Z73fzDxEZkaw0" \
   | jq
@@ -171,7 +173,7 @@ curl localhost:4000/users/profile \
   "updated_at": "2025-01-24T01:41:12.714Z"
 }
 
-# 8. Get profile without token
+# 3. Get profile without token
 curl localhost:4000/users/profile \
   | jq
 {
@@ -179,18 +181,23 @@ curl localhost:4000/users/profile \
   "message": "no authorization included in request"
 }
 
-# 9. Get profile with invalid token
+# 4. Get profile with invalid token
 curl localhost:4000/users/profile \
   -H "Authorization: Bearer test"
 {"error":"Unauthorized","message":"invalid JWT token: test"}
 
-# 10. Get profile with expired token
+# 5. Get profile with expired token
 curl localhost:4000/users/profile \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzExNTYzLCJqdGkiOiIxLjE3Mzc3MTE1NjEifQ.bNHy9S3MmyvvvN6nWy2ln2fbJAdZvrr7LeGaV7N8iBQ"
 
 {"error":"Unauthorized","message":"token (eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzExNTYzLCJqdGkiOiIxLjE3Mzc3MTE1NjEifQ.bNHy9S3MmyvvvN6nWy2ln2fbJAdZvrr7LeGaV7N8iBQ) expired"}
 
-# 11. Logout
+
+# ----------------------------------------------------------------
+
+# Logout
+
+# 1. Logout with valid token
 curl -X GET localhost:4000/users/logout \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzIxNTEwLCJqdGkiOiIxLjE3Mzc3MTc5MTAifQ.appzouoVp3F42boGB2Kvn8zy4Dp4F1Z73fzDxEZkaw0" \
   | jq
@@ -198,10 +205,28 @@ curl -X GET localhost:4000/users/logout \
   "message": "Logout successful"
 }
 
-# 12. Delete account
-curl -X DELETE localhost:4000/users \
-  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzIxNTEwLCJqdGkiOiIxLjE3Mzc3MTc5MTAifQ.appzouoVp3F42boGB2Kvn8zy4Dp4F1Z73fzDxEZkaw0" \
+# 2. Logout without token
+curl -X GET localhost:4000/users/logout \
   | jq
 {
-  "message": "User deleted successfully"
+  "error": "Unauthorized",
+  "message": "no authorization included in request"
+}
+
+# 3. Logout with invalid token
+curl -X GET localhost:4000/users/logout \
+  -H "Authorization: Bearer test" \
+  | jq
+{
+  "error": "Unauthorized",
+  "message": "invalid JWT token: test"
+}
+
+# 4. Logout with expired token
+curl -X GET localhost:4000/users/logout \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzExNTYzLCJqdGkiOiIxLjE3Mzc3MTE1NjEifQ.bNHy9S3MmyvvvN6nWy2ln2fbJAdZvrr7LeGaV7N8iBQ" \
+  | jq
+{
+  "error": "Unauthorized",
+  "message": "token (eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzExNTYzLCJqdGkiOiIxLjE3Mzc3MTE1NjEifQ.bNHy9S3MmyvvvN6nWy2ln2fbJAdZvrr7LeGaV7N8iBQ) expired"
 }

@@ -8,6 +8,7 @@ const app = new Hono();
 const route = require('./app/routes');
 const debug = require('debug')('nodejs-api-authentication:server');
 const { loggerMiddleware } = require('./app/middleware');
+const { sequelize } = require('./app/models');
 
 app.use(loggerMiddleware);
 
@@ -52,11 +53,16 @@ app.onError((err, context) => {
   }, statusCode);
 });
 
-// Start server
-serve({
-  fetch: app.fetch,
-  port: process.env.PORT || 4000,
-}, (info) => {
-  const url = colors.yellow(`http://localhost:${info.port}`);
-  debug(`Server started at ${colors.green(new Date())} and listening on ${url}`);
+// Sync the database
+sequelize.sync({ force: false }).then(() => {
+  debug(`Database synced! at ${colors.green(new Date())}`);
+
+  // Start server
+  serve({
+    fetch: app.fetch,
+    port: process.env.PORT || 4000,
+  }, (info) => {
+    const url = colors.yellow(`http://localhost:${info.port}`);
+    debug(`Server started at ${colors.green(new Date())} and listening on ${url}`);
+  });
 });

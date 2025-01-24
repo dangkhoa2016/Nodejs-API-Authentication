@@ -20,6 +20,9 @@ node_modules/
 # database file
 storage/
 
+# database file
+storage/
+
 # logs
 logs/
 *.log
