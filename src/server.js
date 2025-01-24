@@ -7,6 +7,9 @@ const colors = require('@colors/colors');
 const app = new Hono();
 const route = require('./app/routes');
 const debug = require('debug')('nodejs-api-authentication:server');
+const { loggerMiddleware } = require('./app/middleware');
+
+app.use(loggerMiddleware);
 
 // console.log('route', route)
 app.route('/', route);
