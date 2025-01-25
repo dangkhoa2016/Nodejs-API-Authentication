@@ -1,6 +1,5 @@
 const { Hono } = require('hono');
 const jwt = require('hono/jwt');
-const bcrypt = require('bcryptjs');
 const { User, JwtDenylist } = require('../models');
 const { getRouterName, showRoutes } = require('hono/dev');
 const { authenticateMiddleware } = require('../middleware');
@@ -16,11 +15,8 @@ const handleRegister = async (context) => {
   else if (!username || !password)
     return context.json({ error: 'Username and password are required' }, 400);
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-
   try {
-    const user = await User.create({ email, username, encrypted_password: hashedPassword });
-    delete user.dataValues.encrypted_password;
+    const user = await User.create({ email, username, password });
     return context.json({ message: 'User created successfully', user });
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError') {
@@ -46,15 +42,13 @@ controller.on('POST', ['/sign_in', '/login'], async (context) => {
     return context.json({ error: 'Username and password are required' }, 400);
 
   try {
-    const user = await User.scope('withPassword').findOne({ where: { username } });
+    const user = await User.findOne({ where: { username } });
     if (!user)
       return context.json({ error: 'Invalid credentials' }, 400);
 
-    const isPasswordValid = await bcrypt.compare(password, user.encrypted_password);
+    const isPasswordValid = await user.validPassword(password);
     if (!isPasswordValid)
       return context.json({ error: 'Invalid credentials' }, 400);
-
-    delete user.dataValues.encrypted_password;
 
     // update login stats
     const connectionInfo = context.connectionInfo;
@@ -73,8 +67,7 @@ controller.on('POST', ['/sign_in', '/login'], async (context) => {
 
     return context.json({
       message: 'Login successful',
-      token,
-      user,
+      token, user,
     });
   } catch (err) {
     debug('Error logging in', err);
@@ -139,24 +132,21 @@ const handleUpdateProfile = async (context) => {
     if (!context.user)
       return context.json({ error: 'User not found' }, 404);
 
-    let {
+    const {
       username, email, password,
       first_name, last_name,
-      role,
+      // role,
     } = await context.req.json();
 
     const updateFields = { username, email, first_name, last_name };
-    if (role && context.user.isAdmin())
-      updateFields.role = role;
+    // if (role && context.user.isAdmin)
+    //   updateFields.role = role;
 
-    if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      updateFields.encrypted_password = hashedPassword;
-    }
+    if (password)
+      updateFields.password = password;
 
     await context.user.update(updateFields);
 
-    delete context.user.dataValues.encrypted_password;
     return context.json({ message: 'Profile updated successfully', user: context.user });
   } catch (err) {
     if (err.name === 'SequelizeUniqueConstraintError') {

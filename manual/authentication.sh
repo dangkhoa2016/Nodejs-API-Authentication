@@ -37,16 +37,14 @@ curl -X POST localhost:4000/users/register \
 {
   "message": "User created successfully",
   "user": {
-    "first_name": "",
-    "last_name": "",
-    "role": "user",
-    "sign_in_count": 0,
-    "failed_attempts": 0,
     "id": 1,
     "email": "test@user.local",
     "username": "user",
-    "updated_at": "2025-01-24T11:24:12.454Z",
-    "created_at": "2025-01-24T11:24:12.454Z"
+    "first_name": "",
+    "last_name": "",
+    "role": "user",
+    "created_at": "2025-01-26T08:50:27.458Z",
+    "updated_at": "2025-01-26T08:50:27.458Z"
   }
 }
 
@@ -112,23 +110,9 @@ curl -X POST localhost:4000/users/login \
     "last_name": "",
     "avatar": null,
     "role": "user",
-    "reset_password_token": null,
-    "reset_password_sent_at": null,
-    "remember_created_at": null,
-    "sign_in_count": 1,
-    "current_sign_in_at": "2025-01-24T11:25:10.188Z",
-    "last_sign_in_at": null,
-    "current_sign_in_ip": "::1",
-    "last_sign_in_ip": null,
-    "confirmation_token": null,
     "confirmed_at": null,
-    "confirmation_sent_at": null,
-    "unconfirmed_email": null,
-    "failed_attempts": 0,
-    "unlock_token": null,
-    "locked_at": null,
-    "created_at": "2025-01-24T11:24:12.454Z",
-    "updated_at": "2025-01-24T11:25:10.188Z"
+    "created_at": "2025-01-26T08:50:27.458Z",
+    "updated_at": "2025-01-26T08:50:47.267Z"
   }
 }
 
@@ -154,23 +138,9 @@ curl localhost:4000/users/profile \
   "last_name": "",
   "avatar": null,
   "role": "user",
-  "reset_password_token": null,
-  "reset_password_sent_at": null,
-  "remember_created_at": null,
-  "sign_in_count": 1,
-  "current_sign_in_at": "2025-01-24T01:41:12.714Z",
-  "last_sign_in_at": null,
-  "current_sign_in_ip": "::1",
-  "last_sign_in_ip": null,
-  "confirmation_token": null,
   "confirmed_at": null,
-  "confirmation_sent_at": null,
-  "unconfirmed_email": null,
-  "failed_attempts": 0,
-  "unlock_token": null,
-  "locked_at": null,
-  "created_at": "2025-01-24T01:40:35.584Z",
-  "updated_at": "2025-01-24T01:41:12.714Z"
+  "created_at": "2025-01-26T08:50:27.458Z",
+  "updated_at": "2025-01-26T08:50:47.267Z"
 }
 
 # 3. Get profile without token
@@ -324,22 +294,8 @@ curl -X PUT localhost:4000/users \
     "last_name": "User",
     "avatar": null,
     "role": "user",
-    "reset_password_token": null,
-    "reset_password_sent_at": null,
-    "remember_created_at": null,
-    "sign_in_count": 1,
-    "current_sign_in_at": "2025-01-25T02:25:31.271Z",
-    "last_sign_in_at": null,
-    "current_sign_in_ip": "::1",
-    "last_sign_in_ip": null,
-    "confirmation_token": null,
     "confirmed_at": null,
-    "confirmation_sent_at": null,
-    "unconfirmed_email": null,
-    "failed_attempts": 0,
-    "unlock_token": null,
-    "locked_at": null,
-    "created_at": "2025-01-25T02:25:08.845Z",
-    "updated_at": "2025-01-25T02:26:04.454Z"
+    "created_at": "2025-01-26T08:50:27.458Z",
+    "updated_at": "2025-01-26T08:51:56.545Z"
   }
 }

@@ -28,12 +28,6 @@ module.exports = (sequelize, DataTypes) => {
     underscored: true,
     updatedAt: 'updated_at',
     createdAt: 'created_at',
-    indexes: [
-      {
-        unique: true,
-        fields: ['jti'],
-      },
-    ],
   });
 
   return JwtDenylist;
