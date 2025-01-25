@@ -4,3 +4,5 @@ yarn run sequelize-cli model:generate --name User --attributes email:string,encr
 yarn run sequelize-cli model:generate --name JwtDenylist --attributes jti:string,exp:date --underscored
 
 yarn run sequelize-cli db:migrate
+
+yarn run sequelize-cli seed:generate --name user
