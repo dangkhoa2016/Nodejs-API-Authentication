@@ -39,7 +39,6 @@ const handleRegister = async (context) => {
 
 controller.on(['POST'], ['/', '/register', '/sign_up'], handleRegister);
 
-
 // Login and create JWT token
 controller.on('POST', ['/sign_in', '/login'], async (context) => {
   const { username, password } = await context.req.json();
@@ -119,6 +118,63 @@ const handleShowProfile = async (context) => {
 
 controller.handleShowProfile = handleShowProfile;
 controller.get('/profile', authenticateMiddleware, handleShowProfile);
+
+// Delete user account
+controller.delete('/', authenticateMiddleware, async (context) => {
+  try {
+    if (!context.user)
+      return context.json({ error: 'User not found' }, 404);
+
+    await context.user.destroy();
+    return context.json({ message: 'Bye! Your account has been successfully cancelled. We hope to see you again soon.' });
+  } catch (err) {
+    debug('Error deleting user', err);
+    return context.json({ error: 'Error deleting user' }, 500);
+  }
+});
+
+// Update user profile
+const handleUpdateProfile = async (context) => {
+  try {
+    if (!context.user)
+      return context.json({ error: 'User not found' }, 404);
+
+    let {
+      username, email, password,
+      first_name, last_name,
+      role,
+    } = await context.req.json();
+
+    const updateFields = { username, email, first_name, last_name };
+    if (role && context.user.isAdmin())
+      updateFields.role = role;
+
+    if (password) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      updateFields.encrypted_password = hashedPassword;
+    }
+
+    await context.user.update(updateFields);
+
+    delete context.user.dataValues.encrypted_password;
+    return context.json({ message: 'Profile updated successfully', user: context.user });
+  } catch (err) {
+    if (err.name === 'SequelizeUniqueConstraintError') {
+      debug('Error updating profile: SequelizeUniqueConstraintError', err);
+      // return context.json({ error: 'Username or email already exists' })
+      return context.json({ error: err['errors'][0]['message'] }, 400);
+    } else if (err.name === 'SequelizeValidationError') {
+      debug('Error updating profile: SequelizeValidationError', err);
+      return context.json({ error: err['errors'][0]['message'] }, 400);
+    }
+
+    debug('Error updating profile: other', err);
+    return context.json({ error: 'Error creating user' }, 400);
+  }
+};
+
+controller.on(['PUT', 'PATCH'], ['/', '/profile'], authenticateMiddleware, handleUpdateProfile);
+
 
 debug(getRouterName(controller));
 showRoutes(controller, {

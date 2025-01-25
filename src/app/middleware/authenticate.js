@@ -26,10 +26,10 @@ const handlePayload = async (context) => {
   context.user = user;
 };
 
-const authenticate = async (context, next) => {
+const authenticateMiddleware = async (context, next) => {
   await jwtMiddleware(context, () => {});
   await handlePayload(context);
   await next();
 };
 
-module.exports = authenticate;
+module.exports = authenticateMiddleware;

@@ -230,3 +230,116 @@ curl -X GET localhost:4000/users/logout \
   "error": "Unauthorized",
   "message": "token (eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzExNTYzLCJqdGkiOiIxLjE3Mzc3MTE1NjEifQ.bNHy9S3MmyvvvN6nWy2ln2fbJAdZvrr7LeGaV7N8iBQ) expired"
 }
+
+# ----------------------------------------------------------------
+
+# Delete account
+
+# 1. Delete account with valid token
+curl -X DELETE localhost:4000/users \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzIxNTEwLCJqdGkiOiIxLjE3Mzc3MTc5MTAifQ.appzouoVp3F42boGB2Kvn8zy4Dp4F1Z73fzDxEZkaw0" \
+  | jq
+{
+  "message": "Bye! Your account has been successfully cancelled. We hope to see you again soon."
+}
+
+# 2. Delete account without token
+curl -X DELETE localhost:4000/users \
+  | jq
+{
+  "error": "Unauthorized",
+  "message": "no authorization included in request"
+}
+
+# 3. Delete account with invalid token
+curl -X DELETE localhost:4000/users \
+  -H "Authorization: Bearer test"
+{"error":"Unauthorized","message":"invalid JWT token: test"}
+
+# 4. Delete account with expired token
+curl -X DELETE localhost:4000/users \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzExNTYzLCJqdGkiOiIxLjE3Mzc3MTE1NjEifQ.bNHy9S3MmyvvvN6nWy2ln2fbJAdZvrr7LeGaV7N8iBQ"
+
+{"error":"Unauthorized","message":"token (eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzExNTYzLCJqdGkiOiIxLjE3Mzc3MTE1NjEifQ.bNHy9S3MmyvvvN6nWy2ln2fbJAdZvrr7LeGaV7N8iBQ) expired"}
+
+# ----------------------------------------------------------------
+
+# Update account
+
+# 1. Update account without token
+curl -X PUT localhost:4000/users \
+  -H "Content-Type: application/json" \
+  -d '{"username": "user1", "email": "test1@user.local", "password": "password1", "first_name": "Test", "last_name": "User"}' \
+  | jq
+{
+  "error": "Unauthorized",
+  "message": "no authorization included in request"
+}
+
+# 2. Update account with invalid token
+curl -X PUT localhost:4000/users \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer test" \
+  -d '{"username": "user1", "email": "test1@user.local", "password": "password1", "first_name": "Test", "last_name": "User"}' \
+  | jq
+{
+  "error": "Unauthorized",
+  "message": "invalid JWT token: test"
+}
+
+# 3. Update account with expired token
+curl -X PUT localhost:4000/users \
+  -H "Content-Type: application/json" \
+  -d '{"username": "user1", "email": "test1@user.local", "password": "password1", "first_name": "Test", "last_name": "User"}' \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzExNTYzLCJqdGkiOiIxLjE3Mzc3MTE1NjEifQ.bNHy9S3MmyvvvN6nWy2ln2fbJAdZvrr7LeGaV7N8iBQ" \
+  | jq
+{
+  "error": "Unauthorized",
+  "message": "token (eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzExNTYzLCJqdGkiOiIxLjE3Mzc3MTE1NjEifQ.bNHy9S3MmyvvvN6nWy2ln2fbJAdZvrr7LeGaV7N8iBQ) expired"
+}
+
+# 4. Update account with valid token but the user does not exist
+curl -X PUT localhost:4000/users \
+  -H "Content-Type: application/json" \
+  -d '{"username": "user1", "email": "test1@user.local", "password": "password1", "first_name": "Test", "last_name": "User"}' \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzQxMzAzNjk3LCJqdGkiOiIxLjE3Mzc3MDM2OTcifQ.QEhwn_pTU16_fA-4pzWVJQ0hsaoJL8Edhb8SWBISLkY" \
+  | jq
+{
+  "error": "User not found"
+}
+
+# 5. Update account with valid token and valid data
+curl -X PUT localhost:4000/users \
+  -H "Content-Type: application/json" \
+  -d '{"username": "user1", "email": "test1@user.local", "password": "password1", "first_name": "Test", "last_name": "User", "role": "admin"}' \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ1c2VyIiwiZXhwIjoxNzM3NzIxNTEwLCJqdGkiOiIxLjE3Mzc3MTc5MTAifQ.appzouoVp3F42boGB2Kvn8zy4Dp4F1Z73fzDxEZkaw0" \
+  | jq
+{
+  "message": "Profile updated successfully",
+  "user": {
+    "id": 1,
+    "email": "test1@user.local",
+    "username": "user1",
+    "first_name": "Test",
+    "last_name": "User",
+    "avatar": null,
+    "role": "user",
+    "reset_password_token": null,
+    "reset_password_sent_at": null,
+    "remember_created_at": null,
+    "sign_in_count": 1,
+    "current_sign_in_at": "2025-01-25T02:25:31.271Z",
+    "last_sign_in_at": null,
+    "current_sign_in_ip": "::1",
+    "last_sign_in_ip": null,
+    "confirmation_token": null,
+    "confirmed_at": null,
+    "confirmation_sent_at": null,
+    "unconfirmed_email": null,
+    "failed_attempts": 0,
+    "unlock_token": null,
+    "locked_at": null,
+    "created_at": "2025-01-25T02:25:08.845Z",
+    "updated_at": "2025-01-25T02:26:04.454Z"
+  }
+}
