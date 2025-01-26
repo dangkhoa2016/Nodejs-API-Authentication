@@ -8,7 +8,13 @@
     "dev": "yarn start",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "migrate": "yarn run sequelize-cli db:migrate",
+    "migrate:undo": "yarn run sequelize-cli db:migrate:undo",
+    "seed": "yarn run sequelize-cli db:seed:all",
+    "seed:undo": "yarn run sequelize-cli db:seed:undo",
+    "seed:undo:all": "yarn run sequelize-cli db:seed:undo:all",
+    "migrate-seed": "yarn run migrate && yarn run seed"
   },
   "dependencies": {
     "@colors/colors": "^1.6.0",
