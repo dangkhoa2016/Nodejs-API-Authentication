@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('crypto');
 const { User } = require('../models');
 const debug = require('debug')('nodejs-api-authentication:services->user');
 
@@ -33,7 +34,9 @@ const createUser = async (context, { email, username, password, role }) => {
     return context.json({ error: 'Username and password are required' }, 400);
 
   try {
-    const user = await User.create({ email, username, password, role });
+    const confirmation_token = crypto.randomBytes(32).toString('hex');
+    const confirmation_sent_at = new Date();
+    const user = await User.create({ email, username, password, role, confirmation_token, confirmation_sent_at });
     return context.json({ message: 'User created successfully', user }, 201);
   } catch (err) {
     const handled = handleSequelizeError(context, err, 'creating user');

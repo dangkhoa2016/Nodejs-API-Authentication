@@ -1,6 +1,7 @@
 const { Hono } = require('hono');
 const jwt = require('hono/jwt');
-const { User, JwtDenylist } = require('../models');
+const crypto = require('crypto');
+const { User, JwtDenylist, RefreshToken } = require('../models');
 const { getRouterName, showRoutes } = require('hono/dev');
 const { authenticateMiddleware } = require('../middleware');
 const { createRateLimiter } = require('../middleware');
@@ -62,15 +63,22 @@ controller.on('POST', ['/sign_in', '/login'], loginRateLimiter, async (context) 
     user.current_sign_in_ip = connectionInfo?.remote?.address || null;
     await user.save();
 
-    // Create JWT token
+    // Create JWT access token
     const now = Date.now() / 1e3 | 0;
     const payload = { id: user.id, username: user.username, exp: now + (ms('1h') / 1000), jti: user.id + '.' + now };
     debug('payload', payload);
     const token = await jwt.sign(payload, process.env.JWT_SECRET);
 
+    // Create refresh token (7 day lifetime)
+    const refreshTokenValue = crypto.randomBytes(64).toString('hex');
+    const refreshExpiresAt = new Date(Date.now() + ms('7d'));
+    await RefreshToken.create({ token: refreshTokenValue, user_id: user.id, expires_at: refreshExpiresAt });
+
     return context.json({
       message: 'Login successful',
-      token, user,
+      token,
+      refresh_token: refreshTokenValue,
+      user,
     });
   } catch (err) {
     debug('Error logging in', err);
@@ -84,11 +92,20 @@ const handleLogout = async (context) => {
     if (!context.user)
       return context.json({ error: 'User not found' }, 404);
 
-    // add token to denylist
+    // Add access token jti to denylist
     const decoded_auth = context.get('jwtPayload');
     const jti = decoded_auth.jti;
     const exp = new Date(decoded_auth.exp * 1e3);
     await JwtDenylist.create({ jti, exp });
+
+    // Revoke refresh token if provided in body
+    const body = await context.req.json().catch(() => ({}));
+    const refresh_token = body?.refresh_token;
+    if (refresh_token) {
+      const tokenRecord = await RefreshToken.findOne({ where: { token: refresh_token } });
+      if (tokenRecord && tokenRecord.isValid)
+        await tokenRecord.update({ revoked_at: new Date() });
+    }
 
     return context.json({ message: 'Logout successful' });
   } catch (err) {

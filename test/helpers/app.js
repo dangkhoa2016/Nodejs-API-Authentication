@@ -20,8 +20,9 @@ const getTestApp = async () => {
  * Reset all tables between test suites to ensure isolation.
  */
 const resetDatabase = async () => {
-  const { User, JwtDenylist } = require('../../src/app/models');
+  const { User, JwtDenylist, RefreshToken } = require('../../src/app/models');
   await JwtDenylist.destroy({ where: {}, truncate: true });
+  await RefreshToken.destroy({ where: {}, truncate: true });
   await User.destroy({ where: {}, truncate: true });
 };
 

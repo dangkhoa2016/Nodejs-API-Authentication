@@ -1,12 +1,39 @@
 const { Hono } = require('hono');
 const { getRouterName, showRoutes } = require('hono/dev');
+const { swaggerUI } = require('@hono/swagger-ui');
 const debug = require('debug')('nodejs-api-authentication:controllers->home');
 const controller = new Hono();
 const path = require('path');
-const mime = require('hono/utils/mime');
+const { lookup: mimeLookup } = require('mime-types');
 const fs = require('fs');
+const openApiSpec = require('../../openapi');
+const { sequelize } = require('../models');
+const { version } = require('../../../package.json');
 
 controller.get('/', (context) => context.json({ message: 'Welcome to the Node.js API Authentication' }));
+
+// Health check endpoint (ARCH-07)
+controller.get('/health', async (context) => {
+  let dbStatus = 'ok';
+  try {
+    await sequelize.authenticate();
+  } catch {
+    dbStatus = 'error';
+  }
+
+  return context.json({
+    status: dbStatus === 'ok' ? 'ok' : 'degraded',
+    db: dbStatus,
+    uptime: Math.floor(process.uptime()),
+    version,
+  });
+});
+
+// OpenAPI spec endpoint (ARCH-08)
+controller.get('/openapi.json', (context) => context.json(openApiSpec));
+
+// Swagger UI endpoint (ARCH-08)
+controller.get('/docs', swaggerUI({ url: '/openapi.json' }));
 
 const publicFolder = path.join(__dirname, '../../public');
 
@@ -30,7 +57,7 @@ const createStreamBody = (stream) => {
 const handleFile = (context, filePath) => {
   const file = path.join(publicFolder, filePath);
   const stats = fs.lstatSync(file);
-  const mimeType = mime.getMimeType(file);
+  const mimeType = mimeLookup(file);
   context.header('Content-Type', mimeType || 'application/octet-stream');
   const size = stats.size;
 
