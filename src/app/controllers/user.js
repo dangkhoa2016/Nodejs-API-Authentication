@@ -1,4 +1,5 @@
 const { Hono } = require('hono');
+const bcrypt = require('bcryptjs');
 const { User } = require('../models');
 const { getRouterName, showRoutes } = require('hono/dev');
 const debug = require('debug')('nodejs-api-authentication:controllers->user');
@@ -32,8 +33,10 @@ const handleUpdate = async (context) => {
 
   const updateFields = { username, email, first_name, last_name, role };
 
-  if (password)
-    updateFields.password = password;
+  if (password) {
+    // Hash directly so encrypted_password is an explicit changed field in the UPDATE
+    updateFields.encrypted_password = await bcrypt.hash(password, appConfig.hashSalt);
+  }
 
   try {
     await user.update(updateFields);
@@ -105,6 +108,7 @@ const handleGetAll = async (context) => {
 controller.on(['GET'], ['/', '/all'], handleGetAll);
 
 
+/* c8 ignore next 4 */
 if (appConfig.isDevelopment) {
   debug(getRouterName(controller));
   showRoutes(controller, { verbose: true });

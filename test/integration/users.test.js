@@ -122,6 +122,35 @@ describe('PUT /users/:id — admin only', () => {
     expect(body.user.first_name).toBe('Updated');
   });
 
+  it('updates password when password field is provided', async () => {
+    const { token } = await createAdmin();
+    const { user } = await createRegularUser('cpw');
+
+    const res = await request('PUT', `/users/${user.id}`, {
+      token,
+      body: { password: 'brandnewpw99' },
+    });
+    expect(res.status).toBe(200);
+
+    // Verify the new password actually works
+    const loginRes = await login({ username: 'usercpw', password: 'brandnewpw99' });
+    expect(loginRes.status).toBe(200);
+  });
+
+  it('returns 400 on duplicate email (handleSequelizeError path)', async () => {
+    const { token } = await createAdmin();
+    const { user: u1 } = await createRegularUser('dupA');
+    await createRegularUser('dupB');
+
+    const res = await request('PUT', `/users/${u1.id}`, {
+      token,
+      body: { email: 'userdupB@test.com' }, // already taken by dupB
+    });
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toBeTruthy();
+  });
+
   it('returns 404 for nonexistent user', async () => {
     const { token } = await createAdmin();
     const res = await request('PUT', '/users/99999', {

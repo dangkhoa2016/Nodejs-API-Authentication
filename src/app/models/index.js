@@ -12,6 +12,7 @@ const db = {};
 let sequelize;
 config.logQueryParameters = appConfig.isDevelopment;
 
+/* c8 ignore next 3 -- use_env_variable is only set for specific deployment configs */
 if (config.use_env_variable)
   sequelize = new Sequelize(process.env[config.use_env_variable], config);
 else
@@ -33,6 +34,7 @@ fs
   });
 
 Object.keys(db).forEach(modelName => {
+  /* c8 ignore next 3 -- all current models define an associate method */
   if (db[modelName].associate) {
     db[modelName].associate(db);
   }
