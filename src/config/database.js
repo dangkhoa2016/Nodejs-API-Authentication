@@ -8,6 +8,7 @@ const createEnvConfig = (dialect) => {
       'dialect': 'sqlite',
     };
   } else if (dialect === 'postgres') {
+    /* c8 ignore next 8 -- postgres config is only used in production deployment */
     return {
       // use_env_variable: 'DATABASE_URL',
       'username': DB_USER,

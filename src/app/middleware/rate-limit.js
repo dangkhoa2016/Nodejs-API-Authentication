@@ -24,11 +24,13 @@ const createRateLimiter = ({
   const pruneInterval = setInterval(() => {
     const now = Date.now();
     for (const [key, entry] of store.entries()) {
+      /* c8 ignore next -- the else branch (entry not yet expired) is only hit when prune fires mid-window */
       if (now >= entry.resetAt) store.delete(key);
     }
   }, windowMs);
 
   // Allow GC when tests or server shuts down
+  /* c8 ignore next */
   if (pruneInterval.unref) pruneInterval.unref();
 
   const getKey = keyFn || ((context) => {

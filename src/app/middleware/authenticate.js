@@ -8,8 +8,8 @@ const jwtMiddleware = jwt({
 
 const handlePayload = async (context) => {
   const decoded = context.get('jwtPayload');
-  if (!decoded)
-    return;
+  /* c8 ignore next -- hono/jwt always throws HTTPException before reaching this */
+  if (!decoded) return;
 
   const jwtDenylist = await JwtDenylist.findOne({ where: { jti: decoded.jti } });
   if (jwtDenylist) {

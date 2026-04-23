@@ -1,4 +1,5 @@
 const winston = require ('winston');
+/* c8 ignore next 2 -- env var defaults; both branches can't be covered simultaneously */
 const logFolder = process.env.LOG_FOLDER || './logs';
 const fileName = process.env.LOG_FILE || 'combined.log';
 

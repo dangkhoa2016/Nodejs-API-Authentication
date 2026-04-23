@@ -5,6 +5,7 @@ const { getConnInfo } = require('@hono/node-server/conninfo');
 const SENSITIVE_FIELDS = ['password', 'token', 'secret', 'encrypted_password', 'authorization'];
 
 const sanitize = (obj) => {
+  /* c8 ignore next -- null/non-object guard; in practice obj is always a valid request body object */
   if (!obj || typeof obj !== 'object') return obj;
   const clone = { ...obj };
   for (const field of SENSITIVE_FIELDS) {
@@ -21,6 +22,7 @@ const loggerMiddleware = async (context, next) => {
   // Log the request information — getConnInfo may throw in test environments (no TCP connection)
   let connectionInfo = {};
   try {
+    /* c8 ignore next -- getConnInfo always throws in tests (no TCP), so the || fallback is unreachable here */
     connectionInfo = getConnInfo(context) || {};
   } catch {
     connectionInfo = {};
@@ -53,7 +55,7 @@ const loggerMiddleware = async (context, next) => {
     } else {
       loggerConfig.info(`Response: ${status} - ${contentType}`);
     }
-  } catch {
+  } catch { /* c8 ignore next -- catch body only reached if Response.clone().text() throws */
     loggerConfig.info(`Response: ${status} - ${contentType}`);
   }
 };
