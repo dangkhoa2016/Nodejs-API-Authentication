@@ -3,11 +3,18 @@ const jwt = require('hono/jwt');
 const { User, JwtDenylist } = require('../models');
 const { getRouterName, showRoutes } = require('hono/dev');
 const { authenticateMiddleware } = require('../middleware');
+const { createRateLimiter } = require('../middleware');
 const { createUser, handleSequelizeError } = require('../services/user.service');
 const debug = require('debug')('nodejs-api-authentication:controllers->auth');
 const ms = require('ms');
 const { appConfig } = require('../../config');
 const controller = new Hono();
+
+const loginRateLimiter = createRateLimiter({
+  windowMs: 60_000,   // 1 minute window
+  max: parseInt(process.env.LOGIN_RATE_LIMIT || '5', 10),
+  message: 'Too many login attempts, please try again in 1 minute',
+});
 
 // Register user
 const handleRegister = async (context) => {
@@ -18,7 +25,7 @@ const handleRegister = async (context) => {
 controller.on(['POST'], ['/', '/register', '/sign_up'], handleRegister);
 
 // Login and create JWT token
-controller.on('POST', ['/sign_in', '/login'], async (context) => {
+controller.on('POST', ['/sign_in', '/login'], loginRateLimiter, async (context) => {
   const { username, password } = await context.req.json();
   if (!username || !password)
     return context.json({ error: 'Username and password are required' }, 400);
@@ -28,11 +35,25 @@ controller.on('POST', ['/sign_in', '/login'], async (context) => {
     if (!user)
       return context.json({ error: 'Invalid credentials' }, 400);
 
-    const isPasswordValid = await user.validPassword(password);
-    if (!isPasswordValid)
-      return context.json({ error: 'Invalid credentials' }, 400);
+    // Check account lockout before validating password
+    if (user.isLocked) {
+      const lockDurationMin = Math.round(parseInt(process.env.ACCOUNT_LOCK_DURATION_MS || String(30 * 60 * 1000), 10) / 60000);
+      return context.json({
+        error: 'Account locked',
+        message: `Too many failed login attempts. Account is locked for ${lockDurationMin} minutes.`,
+      }, 423);
+    }
 
-    // update login stats
+    const isPasswordValid = await user.validPassword(password);
+    if (!isPasswordValid) {
+      await user.incrementFailedAttempts();
+      return context.json({ error: 'Invalid credentials' }, 400);
+    }
+
+    // Successful login — reset lockout counters
+    await user.resetFailedAttempts();
+
+    // Update login stats
     const connectionInfo = context.connectionInfo;
     user.sign_in_count++;
     user.last_sign_in_at = user.current_sign_in_at;
@@ -41,7 +62,7 @@ controller.on('POST', ['/sign_in', '/login'], async (context) => {
     user.current_sign_in_ip = connectionInfo.remote.address;
     await user.save();
 
-    // create JWT token
+    // Create JWT token
     const now = Date.now() / 1e3 | 0;
     const payload = { id: user.id, username: user.username, exp: now + (ms('1h') / 1000), jti: user.id + '.' + now };
     debug('payload', payload);

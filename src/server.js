@@ -15,6 +15,8 @@ const debug = require('debug')('nodejs-api-authentication:server');
 const { loggerMiddleware } = require('./app/middleware');
 const { sequelize } = require('./app/models');
 const { appConfig } = require('./config');
+const { JwtDenylist } = require('./app/models');
+const { startJwtCleanupJob } = require('./app/jobs/jwt-cleanup');
 
 app.use(secureHeaders());
 
@@ -67,6 +69,9 @@ app.onError((err, context) => {
 });
 
 const startServer = () => {
+  const cleanupIntervalMs = parseInt(process.env.JWT_CLEANUP_INTERVAL_MS || String(60 * 60 * 1000), 10);
+  startJwtCleanupJob(JwtDenylist, cleanupIntervalMs);
+
   serve({
     fetch: app.fetch,
     port: process.env.PORT || 4000,

@@ -60,6 +60,30 @@ module.exports = (sequelize, DataTypes) => {
 
       return await bcrypt.compare(password, this.encrypted_password);
     }
+
+    get isLocked() {
+      if (!this.locked_at) return false;
+      const lockDurationMs = parseInt(process.env.ACCOUNT_LOCK_DURATION_MS || String(30 * 60 * 1000), 10);
+      return (Date.now() - new Date(this.locked_at).getTime()) < lockDurationMs;
+    }
+
+    async incrementFailedAttempts() {
+      const maxAttempts = parseInt(process.env.MAX_FAILED_ATTEMPTS || '5', 10);
+      this.failed_attempts = (this.failed_attempts || 0) + 1;
+      if (this.failed_attempts >= maxAttempts) {
+        this.locked_at = new Date();
+        debug(`Account locked for user id=${this.id} after ${this.failed_attempts} failed attempts`);
+      }
+      await this.save();
+    }
+
+    async resetFailedAttempts() {
+      if (this.failed_attempts > 0 || this.locked_at) {
+        this.failed_attempts = 0;
+        this.locked_at = null;
+        await this.save();
+      }
+    }
   }
 
   const columns = {
