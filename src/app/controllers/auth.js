@@ -54,12 +54,12 @@ controller.on('POST', ['/sign_in', '/login'], loginRateLimiter, async (context) 
     await user.resetFailedAttempts();
 
     // Update login stats
-    const connectionInfo = context.connectionInfo;
+    const connectionInfo = context.connectionInfo || {};
     user.sign_in_count++;
     user.last_sign_in_at = user.current_sign_in_at;
     user.last_sign_in_ip = user.current_sign_in_ip;
     user.current_sign_in_at = new Date();
-    user.current_sign_in_ip = connectionInfo.remote.address;
+    user.current_sign_in_ip = connectionInfo?.remote?.address || null;
     await user.save();
 
     // Create JWT token

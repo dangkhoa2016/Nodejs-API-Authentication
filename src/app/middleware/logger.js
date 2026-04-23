@@ -18,8 +18,13 @@ const loggerMiddleware = async (context, next) => {
   const url = colors.blue(context.req.path);
   const body = await context.req.json().catch(() => ({})); // Get the body, default to {} if there is no body
 
-  // Log the request information
-  const connectionInfo = getConnInfo(context);
+  // Log the request information — getConnInfo may throw in test environments (no TCP connection)
+  let connectionInfo = {};
+  try {
+    connectionInfo = getConnInfo(context) || {};
+  } catch {
+    connectionInfo = {};
+  }
   loggerConfig.info(`Request from: ${JSON.stringify(connectionInfo)}`);
   const headers = context.req.header();
   delete headers['accept'];
@@ -37,14 +42,20 @@ const loggerMiddleware = async (context, next) => {
   // Proceed with processing the request and log the response result after completion
   await next();
 
-  // Log the response information
+  // Log the response information — clone before reading to avoid consuming the stream
   const status = colors.yellow(context.res.status);
-  const contentType = colors.grey(context.res.headers.get('content-type'));
-  if (['/json', 'text/'].some((type) => contentType.includes(type))) {
-    const responseBody = await context.res.text();
-    loggerConfig.info(`Response: ${status} - ${contentType} - Body: ${responseBody}`);
-  } else
+  const contentType = colors.grey(context.res.headers.get('content-type') || '');
+  try {
+    if (['/json', 'text/'].some((type) => contentType.includes(type))) {
+      const cloned = context.res.clone();
+      const responseBody = await cloned.text();
+      loggerConfig.info(`Response: ${status} - ${contentType} - Body: ${responseBody}`);
+    } else {
+      loggerConfig.info(`Response: ${status} - ${contentType}`);
+    }
+  } catch {
     loggerConfig.info(`Response: ${status} - ${contentType}`);
+  }
 };
 
 module.exports = loggerMiddleware;

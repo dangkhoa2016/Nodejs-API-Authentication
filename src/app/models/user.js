@@ -74,14 +74,14 @@ module.exports = (sequelize, DataTypes) => {
         this.locked_at = new Date();
         debug(`Account locked for user id=${this.id} after ${this.failed_attempts} failed attempts`);
       }
-      await this.save();
+      await this.save({ fields: ['failed_attempts', 'locked_at', 'updated_at'], validate: false });
     }
 
     async resetFailedAttempts() {
       if (this.failed_attempts > 0 || this.locked_at) {
         this.failed_attempts = 0;
         this.locked_at = null;
-        await this.save();
+        await this.save({ fields: ['failed_attempts', 'locked_at', 'updated_at'], validate: false });
       }
     }
   }
@@ -107,6 +107,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       validate: {
         async customValidator(value) {
+          if (value === undefined || value === null || value === '') return;
           if (!isPasswordEncrypted(value))
             throw new Error('Password must be a 60-character encoded string');
         },
@@ -205,8 +206,12 @@ module.exports = (sequelize, DataTypes) => {
         if (!user)
           return;
 
-        user.encrypted_password ||= '';
-        await user.encryptPassword();
+        // Only initialize encrypted_password if it's a new record or has a virtual password set
+        // Avoid overwriting on partial updates where encrypted_password wasn't fetched
+        if (user.isNewRecord || user.password) {
+          user.encrypted_password ||= '';
+          await user.encryptPassword();
+        }
       },
     },
   });

@@ -4,7 +4,14 @@ import pluginJs from '@eslint/js';
 
 /** @type {import('eslint').Linter.Config[]} */
 export default [
+  { ignores: ['node_modules/**', 'coverage/**'] },
   { files: ['**/*.js'], languageOptions: { sourceType: 'commonjs' } },
+  {
+    files: ['test/**/*.js'],
+    languageOptions: {
+      globals: { ...globals.node, describe: 'readonly', it: 'readonly', expect: 'readonly', beforeAll: 'readonly', afterEach: 'readonly', beforeEach: 'readonly', afterAll: 'readonly' },
+    },
+  },
   {
     languageOptions: {
       globals: globals.node,
