@@ -97,7 +97,10 @@ controller.on(['DELETE'], ['/:id{[0-9]+}'], handleDelete);
 
 // Get all users
 const handleGetAll = async (context) => {
-  const { q = '', page = 1, limit = 10 } = context.req.query();
+  const query = context.req.query();
+  const q = query.q || '';
+  const page = Math.max(parseInt(query.page, 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(query.limit, 10) || 10, 1), 100);
 
   try {
     const { count, rows: users } = await User.findAndCountAll({

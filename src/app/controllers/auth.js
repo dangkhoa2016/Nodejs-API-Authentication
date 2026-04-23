@@ -94,7 +94,7 @@ const handleLogout = async (context) => {
   }
 };
 controller.handleLogout = handleLogout;
-controller.on(['DELETE', 'GET'], ['/sign_out', '/logout'], authenticateMiddleware, handleLogout);
+controller.on(['DELETE', 'POST'], ['/sign_out', '/logout'], authenticateMiddleware, handleLogout);
 
 // Get authenticated user profile
 const handleShowProfile = async (context) => {

@@ -2,6 +2,17 @@ const { loggerConfig } = require('../../config');  // Ensure that loggerConfig.j
 const colors = require('@colors/colors');
 const { getConnInfo } = require('@hono/node-server/conninfo');
 
+const SENSITIVE_FIELDS = ['password', 'token', 'secret', 'encrypted_password', 'authorization'];
+
+const sanitize = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj;
+  const clone = { ...obj };
+  for (const field of SENSITIVE_FIELDS) {
+    if (field in clone) clone[field] = '[REDACTED]';
+  }
+  return clone;
+};
+
 const loggerMiddleware = async (context, next) => {
   const method = colors.red(context.req.method);
   const url = colors.blue(context.req.path);
@@ -13,8 +24,8 @@ const loggerMiddleware = async (context, next) => {
   const headers = context.req.header();
   delete headers['accept'];
   delete headers['host'];
-  loggerConfig.info(`Request headers: ${JSON.stringify(headers)}`);
-  loggerConfig.info(`Request detail: ${method} ${url} - Body: ${JSON.stringify(body)}`);
+  loggerConfig.info(`Request headers: ${JSON.stringify(sanitize(headers))}`);
+  loggerConfig.info(`Request detail: ${method} ${url} - Body: ${JSON.stringify(sanitize(body))}`);
 
   // Log query params (if any)
   const queryParams = context.req.query();

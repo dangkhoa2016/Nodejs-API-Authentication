@@ -52,12 +52,11 @@ module.exports = (sequelize, DataTypes) => {
         return false;
 
       if (!this.encrypted_password) {
-        this.constructor = this.constructor.unscoped();
-        await this.reload();
+        const userWithPassword = await this.constructor.scope('withPassword').findByPk(this.id);
+        if (!userWithPassword || !userWithPassword.encrypted_password)
+          return false;
+        return await bcrypt.compare(password, userWithPassword.encrypted_password);
       }
-
-      if (!this.encrypted_password)
-        return false;
 
       return await bcrypt.compare(password, this.encrypted_password);
     }
@@ -156,12 +155,12 @@ module.exports = (sequelize, DataTypes) => {
     updatedAt: 'updated_at',
     createdAt: 'created_at',
     defaultScope: {
-      // attributes: { exclude: ['encrypted_password'] },
+      attributes: { exclude: ['encrypted_password'] },
     },
     scopes: {
-      // withPassword: {
-      //   attributes: {},
-      // },
+      withPassword: {
+        attributes: {},
+      },
       random() {
         return {
           order: sequelize.random(),
