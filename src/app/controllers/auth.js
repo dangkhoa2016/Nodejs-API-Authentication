@@ -3,34 +3,16 @@ const jwt = require('hono/jwt');
 const { User, JwtDenylist } = require('../models');
 const { getRouterName, showRoutes } = require('hono/dev');
 const { authenticateMiddleware } = require('../middleware');
+const { createUser, handleSequelizeError } = require('../services/user.service');
 const debug = require('debug')('nodejs-api-authentication:controllers->auth');
 const ms = require('ms');
+const { appConfig } = require('../../config');
 const controller = new Hono();
 
 // Register user
 const handleRegister = async (context) => {
   const { username, password, email } = await context.req.json();
-  if (!email)
-    return context.json({ error: 'Email is required' }, 400);
-  else if (!username || !password)
-    return context.json({ error: 'Username and password are required' }, 400);
-
-  try {
-    const user = await User.create({ email, username, password });
-    return context.json({ message: 'User created successfully', user });
-  } catch (err) {
-    if (err.name === 'SequelizeUniqueConstraintError') {
-      debug('Error registering: SequelizeUniqueConstraintError', err);
-      // return context.json({ error: 'Username or email already exists' })
-      return context.json({ error: err['errors'][0]['message'] }, 400);
-    } else if (err.name === 'SequelizeValidationError') {
-      debug('Error registering: SequelizeValidationError', err);
-      return context.json({ error: err['errors'][0]['message'] }, 400);
-    }
-
-    debug('Error registering: other', err);
-    return context.json({ error: 'Error creating user' }, 400);
-  }
+  return createUser(context, { email, username, password });
 };
 
 controller.on(['POST'], ['/', '/register', '/sign_up'], handleRegister);
@@ -135,12 +117,9 @@ const handleUpdateProfile = async (context) => {
     const {
       username, email, password,
       first_name, last_name,
-      // role,
     } = await context.req.json();
 
     const updateFields = { username, email, first_name, last_name };
-    // if (role && context.user.isAdmin)
-    //   updateFields.role = role;
 
     if (password)
       updateFields.password = password;
@@ -149,26 +128,20 @@ const handleUpdateProfile = async (context) => {
 
     return context.json({ message: 'Profile updated successfully', user: context.user });
   } catch (err) {
-    if (err.name === 'SequelizeUniqueConstraintError') {
-      debug('Error updating profile: SequelizeUniqueConstraintError', err);
-      // return context.json({ error: 'Username or email already exists' })
-      return context.json({ error: err['errors'][0]['message'] }, 400);
-    } else if (err.name === 'SequelizeValidationError') {
-      debug('Error updating profile: SequelizeValidationError', err);
-      return context.json({ error: err['errors'][0]['message'] }, 400);
-    }
+    const handled = handleSequelizeError(context, err, 'updating profile');
+    if (handled) return handled;
 
     debug('Error updating profile: other', err);
-    return context.json({ error: 'Error creating user' }, 400);
+    return context.json({ error: 'Error updating profile' }, 500);
   }
 };
 
 controller.on(['PUT', 'PATCH'], ['/', '/profile'], authenticateMiddleware, handleUpdateProfile);
 
 
-debug(getRouterName(controller));
-showRoutes(controller, {
-  verbose: true,
-});
+if (appConfig.isDevelopment) {
+  debug(getRouterName(controller));
+  showRoutes(controller, { verbose: true });
+}
 
 module.exports = controller;

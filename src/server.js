@@ -14,6 +14,7 @@ const route = require('./app/routes');
 const debug = require('debug')('nodejs-api-authentication:server');
 const { loggerMiddleware } = require('./app/middleware');
 const { sequelize } = require('./app/models');
+const { appConfig } = require('./config');
 
 app.use(secureHeaders());
 
@@ -30,7 +31,6 @@ app.use(cors({
 
 app.use(loggerMiddleware);
 
-// console.log('route', route)
 app.route('/', route);
 
 app.notFound((context) => {
@@ -46,12 +46,7 @@ app.onError((err, context) => {
   let errorMessage = err.message;
 
   if (err instanceof HTTPException) {
-    // Get the custom response
-    // return err.res
-
-    // debug(err)
     err.res.headers.forEach((value, key) => {
-      // debug(key, value);
       context.header(key, value);
     });
 
@@ -71,11 +66,7 @@ app.onError((err, context) => {
   }, statusCode);
 });
 
-// Sync the database
-sequelize.sync({ force: false }).then(() => {
-  debug(`Database synced! at ${colors.green(new Date())}`);
-
-  // Start server
+const startServer = () => {
   serve({
     fetch: app.fetch,
     port: process.env.PORT || 4000,
@@ -83,4 +74,15 @@ sequelize.sync({ force: false }).then(() => {
     const url = colors.yellow(`http://localhost:${info.port}`);
     debug(`Server started at ${colors.green(new Date())} and listening on ${url}`);
   });
-});
+};
+
+// In development/test: auto-sync schema for convenience.
+// In production: migrations must be run manually before starting.
+if (appConfig.isDevelopment || appConfig.isTest) {
+  sequelize.sync({ force: false }).then(() => {
+    debug(`Database synced! at ${colors.green(new Date())}`);
+    startServer();
+  });
+} else {
+  startServer();
+}

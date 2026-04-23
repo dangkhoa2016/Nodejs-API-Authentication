@@ -4,8 +4,8 @@
   "description": "Node.js API Authentication using Hono, JsonWebToken, Sequelize, Bcrypt and SQLite",
   "license": "MIT",
   "scripts": {
-    "start": "tsx watch src/server.js",
-    "dev": "yarn start",
+    "start": "node src/server.js",
+    "dev": "tsx watch src/server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

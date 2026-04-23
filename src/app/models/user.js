@@ -212,5 +212,8 @@ module.exports = (sequelize, DataTypes) => {
     return values;
   };
 
+  // Expose so controllers can use it in Sequelize `attributes` queries
+  User.allowDisplayColumns = allowDisplayColumns;
+
   return User;
 };

@@ -3,31 +3,14 @@ const { User } = require('../models');
 const { getRouterName, showRoutes } = require('hono/dev');
 const debug = require('debug')('nodejs-api-authentication:controllers->user');
 const { Op } = require('sequelize');
+const { createUser, handleSequelizeError } = require('../services/user.service');
+const { appConfig } = require('../../config');
 const controller = new Hono();
 
 // Create user
 const handleCreate = async (context) => {
-  const { username, password, email } = await context.req.json();
-  if (!email)
-    return context.json({ error: 'Email is required' }, 400);
-  else if (!username || !password)
-    return context.json({ error: 'Username and password are required' }, 400);
-
-  try {
-    const user = await User.create({ email, username, password });
-    return context.json({ message: 'User created successfully', user });
-  } catch (err) {
-    if (err.name === 'SequelizeUniqueConstraintError') {
-      debug('Error creating user: SequelizeUniqueConstraintError', err);
-      return context.json({ error: err['errors'][0]['message'] }, 400);
-    } else if (err.name === 'SequelizeValidationError') {
-      debug('Error creating user: SequelizeValidationError', err);
-      return context.json({ error: err['errors'][0]['message'] }, 400);
-    }
-
-    debug('Error creating user: other', err);
-    return context.json({ error: 'Error creating user' }, 400);
-  }
+  const { username, password, email, role } = await context.req.json();
+  return createUser(context, { email, username, password, role });
 };
 
 controller.on(['POST'], ['/create'], handleCreate);
@@ -35,7 +18,9 @@ controller.on(['POST'], ['/create'], handleCreate);
 
 // Update user
 const handleUpdate = async (context) => {
-  const user = await User.findByPk(context.req.param('id'));
+  const user = await User.findByPk(context.req.param('id'), {
+    attributes: User.allowDisplayColumns,
+  });
   if (!user)
     return context.json({ error: 'User not found' }, 404);
 
@@ -54,16 +39,11 @@ const handleUpdate = async (context) => {
     await user.update(updateFields);
     return context.json({ message: 'User updated successfully', user });
   } catch (err) {
-    if (err.name === 'SequelizeUniqueConstraintError') {
-      debug('Error creating user: SequelizeUniqueConstraintError', err);
-      return context.json({ error: err['errors'][0]['message'] }, 400);
-    } else if (err.name === 'SequelizeValidationError') {
-      debug('Error creating user: SequelizeValidationError', err);
-      return context.json({ error: err['errors'][0]['message'] }, 400);
-    }
+    const handled = handleSequelizeError(context, err, 'updating user');
+    if (handled) return handled;
 
-    debug('Error updaing user: other', err);
-    return context.json({ error: 'Error updaing user' }, 400);
+    debug('Error updating user: other', err);
+    return context.json({ error: 'Error updating user' }, 500);
   }
 };
 
@@ -104,6 +84,7 @@ const handleGetAll = async (context) => {
 
   try {
     const { count, rows: users } = await User.findAndCountAll({
+      attributes: User.allowDisplayColumns,
       where: {
         [Op.or]: [
           { username: { [Op.like]: `%${q}%` } },
@@ -124,9 +105,9 @@ const handleGetAll = async (context) => {
 controller.on(['GET'], ['/', '/all'], handleGetAll);
 
 
-debug(getRouterName(controller));
-showRoutes(controller, {
-  verbose: true,
-});
+if (appConfig.isDevelopment) {
+  debug(getRouterName(controller));
+  showRoutes(controller, { verbose: true });
+}
 
 module.exports = controller;
