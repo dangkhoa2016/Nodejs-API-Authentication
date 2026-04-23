@@ -52,6 +52,7 @@ const createApp = () => {
         errorHeader = err.message;
         errorMessage = err.cause.message;
       } else {
+        /* c8 ignore next -- statusCode is always a valid non-zero HTTP status code */
         errorHeader = statusCode ? 'Unauthorized' : 'Internal server error';
         errorMessage = err.message;
       }

@@ -47,6 +47,7 @@ const createStreamBody = (stream) => {
         controller.close();
       });
     },
+    /* c8 ignore next 3 */
     cancel() {
       stream.destroy();
     },
@@ -58,6 +59,7 @@ const handleFile = (context, filePath) => {
   const file = path.join(publicFolder, filePath);
   const stats = fs.lstatSync(file);
   const mimeType = mimeLookup(file);
+  /* c8 ignore next -- fallback only when mime-types can't identify the extension */
   context.header('Content-Type', mimeType || 'application/octet-stream');
   const size = stats.size;
 

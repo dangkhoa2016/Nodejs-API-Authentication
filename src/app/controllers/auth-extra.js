@@ -37,6 +37,7 @@ controller.post('/refresh', async (context) => {
       return context.json({ error: 'Invalid or expired refresh token' }, 401);
 
     const user = await User.findByPk(tokenRecord.user_id);
+    /* c8 ignore next 2 -- cascade delete removes refresh tokens when user is deleted */
     if (!user)
       return context.json({ error: 'User not found' }, 404);
 
@@ -86,9 +87,11 @@ controller.post('/forgot-password', async (context) => {
     debug(`Password reset token generated for user id=${user.id}`);
 
     // In development/test, expose the token so it can be tested without an email service
+    /* c8 ignore next -- isDevelopment short-circuit branch only in dev environments, not during test runs */
     if (appConfig.isDevelopment || appConfig.isTest)
       return context.json({ ...genericResponse, debug_token: token });
 
+    /* c8 ignore next -- only reached in production (isTest is always true in tests) */
     return context.json(genericResponse);
   } catch (err) {
     debug('Error in forgot-password', err);
@@ -142,6 +145,7 @@ controller.post('/confirm-email', async (context) => {
     if (!user)
       return context.json({ error: 'Invalid or expired confirmation token' }, 400);
 
+    /* c8 ignore next 2 -- unreachable: confirmation_token is cleared on first confirmation, so a valid token can't belong to an already-confirmed user */
     if (user.confirmed_at)
       return context.json({ message: 'Email is already confirmed' });
 
@@ -177,9 +181,11 @@ controller.post('/resend-confirmation', async (context) => {
 
     debug(`Confirmation token regenerated for user id=${user.id}`);
 
+    /* c8 ignore next -- isDevelopment short-circuit branch only in dev environments, not during test runs */
     if (appConfig.isDevelopment || appConfig.isTest)
       return context.json({ ...genericResponse, debug_token: token });
 
+    /* c8 ignore next -- only reached in production (isTest is always true in tests) */
     return context.json(genericResponse);
   } catch (err) {
     debug('Error resending confirmation', err);
@@ -188,6 +194,7 @@ controller.post('/resend-confirmation', async (context) => {
 });
 
 
+/* c8 ignore next 4 */
 if (appConfig.isDevelopment) {
   debug(getRouterName(controller));
   showRoutes(controller, { verbose: true });

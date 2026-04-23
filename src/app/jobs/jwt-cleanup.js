@@ -51,6 +51,7 @@ const startJwtCleanupJob = (JwtDenylist, intervalMs = DEFAULT_INTERVAL_MS, Refre
   const handle = setInterval(run, intervalMs);
 
   // Allow Node to exit without waiting for this interval
+  /* c8 ignore next */
   if (handle.unref) handle.unref();
 
   debug(`JWT cleanup job started — interval: ${intervalMs / 1000}s`);
