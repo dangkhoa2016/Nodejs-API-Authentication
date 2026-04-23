@@ -7,14 +7,14 @@ const { serve } = require('@hono/node-server');
 const colors = require('@colors/colors');
 const debug = require('debug')('nodejs-api-authentication:server');
 const { createApp, sequelize, appConfig } = require('./create-app');
-const { JwtDenylist } = require('./app/models');
+const { JwtDenylist, RefreshToken } = require('./app/models');
 const { startJwtCleanupJob } = require('./app/jobs/jwt-cleanup');
 
 const app = createApp();
 
 const startServer = () => {
   const cleanupIntervalMs = parseInt(process.env.JWT_CLEANUP_INTERVAL_MS || String(60 * 60 * 1000), 10);
-  startJwtCleanupJob(JwtDenylist, cleanupIntervalMs);
+  startJwtCleanupJob(JwtDenylist, cleanupIntervalMs, RefreshToken);
 
   serve({
     fetch: app.fetch,

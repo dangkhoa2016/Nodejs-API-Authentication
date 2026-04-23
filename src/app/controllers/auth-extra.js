@@ -12,6 +12,7 @@
 const { Hono } = require('hono');
 const jwt = require('hono/jwt');
 const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const { User, RefreshToken } = require('../models');
 const { getRouterName, showRoutes } = require('hono/dev');
 const debug = require('debug')('nodejs-api-authentication:controllers->auth-extra');
@@ -84,8 +85,8 @@ controller.post('/forgot-password', async (context) => {
 
     debug(`Password reset token generated for user id=${user.id}`);
 
-    // In development, expose the token so it can be tested without an email service
-    if (appConfig.isDevelopment)
+    // In development/test, expose the token so it can be tested without an email service
+    if (appConfig.isDevelopment || appConfig.isTest)
       return context.json({ ...genericResponse, debug_token: token });
 
     return context.json(genericResponse);
@@ -105,7 +106,7 @@ controller.post('/reset-password', async (context) => {
     return context.json({ error: 'Token and password are required' }, 400);
 
   try {
-    const user = await User.scope('withPassword').findOne({ where: { reset_password_token: token } });
+    const user = await User.findOne({ where: { reset_password_token: token } });
 
     if (!user)
       return context.json({ error: 'Invalid or expired reset token' }, 400);
@@ -114,7 +115,10 @@ controller.post('/reset-password', async (context) => {
     if (tokenAge > ms('2h'))
       return context.json({ error: 'Reset token has expired' }, 400);
 
-    await user.update({ password, reset_password_token: null, reset_password_sent_at: null });
+    // Hash the new password directly so the encrypted value is an explicit field
+    // in the UPDATE (Sequelize captures changed fields before beforeValidate runs)
+    const hashedPassword = await bcrypt.hash(password, appConfig.hashSalt);
+    await user.update({ encrypted_password: hashedPassword, reset_password_token: null, reset_password_sent_at: null });
 
     return context.json({ message: 'Password has been reset successfully' });
   } catch (err) {
@@ -173,7 +177,7 @@ controller.post('/resend-confirmation', async (context) => {
 
     debug(`Confirmation token regenerated for user id=${user.id}`);
 
-    if (appConfig.isDevelopment)
+    if (appConfig.isDevelopment || appConfig.isTest)
       return context.json({ ...genericResponse, debug_token: token });
 
     return context.json(genericResponse);
