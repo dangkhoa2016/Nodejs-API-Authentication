@@ -13,10 +13,17 @@ const { appConfig } = require('../../config');
 const controller = new Hono();
 
 const loginRateLimiter = createRateLimiter({
-  windowMs: 60_000,   // 1 minute window
+  windowMs: 60_000,   // 1-minute window
   /* c8 ignore next -- LOGIN_RATE_LIMIT env var is never set in tests, so the || fallback is always used */
   max: parseInt(process.env.LOGIN_RATE_LIMIT || '5', 10),
   message: 'Too many login attempts, please try again in 1 minute',
+});
+
+const registerRateLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,   // 1 hour window
+  /* c8 ignore next -- REGISTER_RATE_LIMIT env var is never set in tests, so the || fallback is always used */
+  max: parseInt(process.env.REGISTER_RATE_LIMIT || '10', 10),
+  message: 'Too many registration attempts, please try again in 1 hour',
 });
 
 // Register user
@@ -25,7 +32,7 @@ const handleRegister = async (context) => {
   return createUser(context, { email, username, password });
 };
 
-controller.on(['POST'], ['/', '/register', '/sign_up'], handleRegister);
+controller.on(['POST'], ['/', '/register', '/sign_up'], registerRateLimiter, handleRegister);
 
 // Login and create JWT token
 controller.on('POST', ['/sign_in', '/login'], loginRateLimiter, async (context) => {

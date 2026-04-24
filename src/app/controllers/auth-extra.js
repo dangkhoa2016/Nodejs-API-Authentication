@@ -15,15 +15,51 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { User, RefreshToken } = require('../models');
 const { getRouterName, showRoutes } = require('hono/dev');
+const { createRateLimiter } = require('../middleware');
 const debug = require('debug')('nodejs-api-authentication:controllers->auth-extra');
 const ms = require('ms');
 const { appConfig } = require('../../config');
 
 const controller = new Hono();
 
+const refreshRateLimiter = createRateLimiter({
+  windowMs: 60_000,   // 1-minute window
+  /* c8 ignore next -- REFRESH_RATE_LIMIT env var is never set in tests, so the || fallback is always used */
+  max: parseInt(process.env.REFRESH_RATE_LIMIT || '30', 10),
+  message: 'Too many token refresh attempts, please try again in 1 minute',
+});
+
+const forgotPasswordRateLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,   // 1 hour window
+  /* c8 ignore next -- FORGOT_PASSWORD_RATE_LIMIT env var is never set in tests, so the || fallback is always used */
+  max: parseInt(process.env.FORGOT_PASSWORD_RATE_LIMIT || '5', 10),
+  message: 'Too many password reset requests, please try again in 1 hour',
+});
+
+const resetPasswordRateLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,   // 1 hour window
+  /* c8 ignore next -- RESET_PASSWORD_RATE_LIMIT env var is never set in tests, so the || fallback is always used */
+  max: parseInt(process.env.RESET_PASSWORD_RATE_LIMIT || '10', 10),
+  message: 'Too many password reset attempts, please try again in 1 hour',
+});
+
+const confirmEmailRateLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,   // 1 hour window
+  /* c8 ignore next -- CONFIRM_EMAIL_RATE_LIMIT env var is never set in tests, so the || fallback is always used */
+  max: parseInt(process.env.CONFIRM_EMAIL_RATE_LIMIT || '10', 10),
+  message: 'Too many email confirmation attempts, please try again in 1 hour',
+});
+
+const resendConfirmationRateLimiter = createRateLimiter({
+  windowMs: 60 * 60 * 1000,   // 1 hour window
+  /* c8 ignore next -- RESEND_CONFIRMATION_RATE_LIMIT env var is never set in tests, so the || fallback is always used */
+  max: parseInt(process.env.RESEND_CONFIRMATION_RATE_LIMIT || '5', 10),
+  message: 'Too many resend confirmation requests, please try again in 1 hour',
+});
+
 // ─── POST /refresh ──────────────────────────────────────────────────────────
 // Validates a refresh token, rotates it, and returns a new access + refresh token.
-controller.post('/refresh', async (context) => {
+controller.post('/refresh', refreshRateLimiter, async (context) => {
   const body = await context.req.json().catch(() => ({}));
   const refresh_token = body?.refresh_token;
 
@@ -65,7 +101,7 @@ controller.post('/refresh', async (context) => {
 // ─── POST /forgot-password ───────────────────────────────────────────────────
 // Generates a password reset token (valid 2h) and stores it on the user.
 // In production, this would trigger an email. In dev, the token is returned directly.
-controller.post('/forgot-password', async (context) => {
+controller.post('/forgot-password', forgotPasswordRateLimiter, async (context) => {
   const body = await context.req.json().catch(() => ({}));
   const email = body?.email;
 
@@ -101,7 +137,7 @@ controller.post('/forgot-password', async (context) => {
 
 // ─── POST /reset-password ────────────────────────────────────────────────────
 // Validates the reset token and sets a new password.
-controller.post('/reset-password', async (context) => {
+controller.post('/reset-password', resetPasswordRateLimiter, async (context) => {
   const body = await context.req.json().catch(() => ({}));
   const { token, password } = body;
 
@@ -132,7 +168,7 @@ controller.post('/reset-password', async (context) => {
 
 // ─── POST /confirm-email ─────────────────────────────────────────────────────
 // Verifies an email confirmation token and marks the email as confirmed.
-controller.post('/confirm-email', async (context) => {
+controller.post('/confirm-email', confirmEmailRateLimiter, async (context) => {
   const body = await context.req.json().catch(() => ({}));
   const token = body?.token;
 
@@ -160,7 +196,7 @@ controller.post('/confirm-email', async (context) => {
 
 // ─── POST /resend-confirmation ───────────────────────────────────────────────
 // Regenerates and resends the email confirmation token for an unconfirmed account.
-controller.post('/resend-confirmation', async (context) => {
+controller.post('/resend-confirmation', resendConfirmationRateLimiter, async (context) => {
   const body = await context.req.json().catch(() => ({}));
   const email = body?.email;
 

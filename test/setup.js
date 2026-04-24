@@ -10,3 +10,9 @@ process.env.HASH_SALT = '4';
 process.env.LOG_FOLDER = '/tmp';
 // Disable rate limiter in tests (high limit)
 process.env.LOGIN_RATE_LIMIT = '1000';
+process.env.REGISTER_RATE_LIMIT = '1000';
+process.env.FORGOT_PASSWORD_RATE_LIMIT = '1000';
+process.env.RESET_PASSWORD_RATE_LIMIT = '1000';
+process.env.CONFIRM_EMAIL_RATE_LIMIT = '1000';
+process.env.RESEND_CONFIRMATION_RATE_LIMIT = '1000';
+process.env.REFRESH_RATE_LIMIT = '1000';
